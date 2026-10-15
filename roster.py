@@ -282,10 +282,52 @@ def compare(pay_folder=PAY_FOLDER,roster_folder=ROSTER_FOLDER,tin_file=None,hist
     history=read_history(history_folder)
     return dict(results=results,roster=roster,history=history,retirements=read_retirements(pay_folder),required_months=REQUIRED_MONTHS,history_folder=history_folder or '',counts=counts,payfiles=pay_files,rosterfiles=roster_files,roster_names=len(roster),roster_unique=len(index),pay_entries=len(pay),problems=problems,roster_problems=roster_problems,pay_folder=pay_folder,roster_folder=roster_folder,tin_file=tin_file or '',roster_tins=sum(bool(p.get('tin')) for p in roster))
 
+def export_workbook(file_path,sheets):
+    from openpyxl.styles import Font,PatternFill,Alignment
+    from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.table import Table,TableStyleInfo
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+    workbook=openpyxl.Workbook()
+    workbook.remove(workbook.active)
+    for number,sheet in enumerate(sheets,1):
+        ws=workbook.create_sheet(sheet['name'])
+        for values in sheet['rows']:
+            ws.append([ILLEGAL_CHARACTERS_RE.sub('',value) if isinstance(value,str) else value for value in values])
+            for cell in ws[ws.max_row]:
+                # Employee names and notes remain literal text, including leading '='.
+                if isinstance(cell.value,str):cell.data_type='s'
+        ws.freeze_panes='E2'
+        ws.sheet_view.showGridLines=False
+        ws.row_dimensions[1].height=32
+        for cell in ws[1]:
+            cell.font=Font(name='Calibri',bold=True,color='FFFFFF')
+            cell.fill=PatternFill('solid',fgColor='143C43')
+            cell.alignment=Alignment(wrap_text=True,vertical='center')
+        for col in range(1,ws.max_column+1):
+            title=str(ws.cell(1,col).value or '')
+            width=35 if title in ['Payfile employee','Delivery unit','Remarks'] else 27 if title in ['Payfile','PSIPOP references','Selected PSIPOP names'] else 20
+            ws.column_dimensions[get_column_letter(col)].width=width
+        for cells in ws.iter_rows(min_row=2):
+            for cell in cells:cell.font=Font(name='Calibri',size=11);cell.alignment=Alignment(vertical='top')
+            ws.row_dimensions[cells[0].row].height=18
+        if ws.max_row>1:
+            table=Table(displayName=f'Personnel{number}',ref=ws.dimensions)
+            table.tableStyleInfo=TableStyleInfo(name='TableStyleMedium2',showRowStripes=True)
+            ws.add_table(table)
+        else:ws.auto_filter.ref=ws.dimensions
+        titles=[cell.value for cell in ws[1]]
+        for title,fmt in [('Service factor','0%'),('Indicative PBB (payfile salary basis)','#,##0.00')]:
+            if title in titles:
+                col=titles.index(title)+1
+                for row in range(2,ws.max_row+1):ws.cell(row,col).number_format=fmt
+    workbook.save(file_path)
+    return {'file':str(file_path),'sheets':{ws.title:max(ws.max_row-1,0) for ws in workbook.worksheets}}
+
 if __name__=='__main__':
     import json,sys
     try:
         args=json.load(sys.stdin)
-        print(json.dumps(compare(args.get('pay_folder',PAY_FOLDER),args.get('roster_folder',ROSTER_FOLDER),args.get('tin_file'),args.get('history_folder')),ensure_ascii=True))
+        result=export_workbook(args['file'],args['sheets']) if args.get('mode')=='export_workbook' else compare(args.get('pay_folder',PAY_FOLDER),args.get('roster_folder',ROSTER_FOLDER),args.get('tin_file'),args.get('history_folder'))
+        print(json.dumps(result,ensure_ascii=True))
     except Exception as exc:
         print(json.dumps({'error':str(exc)}));sys.exit(1)

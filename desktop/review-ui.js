@@ -4,7 +4,14 @@ function setupSubmissionFilters(){
  const previousMonth=$('month-filter').value;$('month-filter').innerHTML='<option value="">Any month</option>'+(data.required_months||[]).map(month=>'<option value="'+month+'">'+monthLabel(month)+'</option>').join('');$('month-filter').value=previousMonth;const previous=$('file-filter').value,group=$('group-filter').value;
  const files=data.payfiles.filter(f=>f.role==='Payfile'&&(!group||submissionGroup(f)===group));
  $('file-filter').innerHTML='<option value="">All payfiles in this group</option>'+files.map(f=>`<option value="${escape(f.file)}">${submissionGroup(f)==='IU'?'IU':'SDO'} - ${escape(f.file.split(/[\\/]/).pop())}</option>`).join('');
- if(files.some(f=>f.file===previous))$('file-filter').value=previous;
+ if(files.some(f=>f.file===previous))$('file-filter').value=previous;setupUnitFilters();
+}
+function setupUnitFilters(){
+ const previous=$('unit-filter').value;
+ const rows=data.results.filter(row=>(!$('group-filter').value||submissionGroup(row)===$('group-filter').value)&&(!$('file-filter').value||row.file===$('file-filter').value)&&(!$('personnel-filter').value||(row.scope||'unspecified')===$('personnel-filter').value));
+ const units=[...new Set(rows.map(row=>row.unit).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ $('unit-filter').innerHTML='<option value="">All schools / offices</option>'+units.map(unit=>`<option value="${escape(unit)}">${escape(unit)}</option>`).join('');
+ if(units.includes(previous))$('unit-filter').value=previous;
 }
 function reviewMessage(text,error=false){$('review-message').textContent=text;$('review-message').className=error?'error':'';}
 function currentReview(){return data?.results.find(row=>row.id===reviewingId);}

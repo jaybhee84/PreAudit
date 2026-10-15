@@ -3,7 +3,7 @@ const {spawn}=require('node:child_process');
 const path=require('node:path');
 const fs=require('node:fs/promises');
 const reviews=require('./reviews.cjs');
-const {resultCsv}=require('./csv.cjs');
+const {resultCsv,workbookSheets}=require('./csv.cjs');
 if(!app.isPackaged){
  const developmentData=path.join(app.getPath('appData'),process.argv.includes('--smoke-test')?'PBB PreAudit Test':'PBB PreAudit Development');
  app.setPath('userData',developmentData);
@@ -60,6 +60,22 @@ ipcMain.handle('export',async(event,rows)=>{
  if(result.canceled)return null;
  await fs.writeFile(result.filePath,resultCsv(selected,latestResult.required_months),'utf8');return result.filePath;
 });
+ipcMain.handle('export-workbook',async event=>{
+ trusted(event);if(compareBusy||!latestResult)throw Error('Complete the comparison before downloading Excel.');
+ const rows=latestResult.results;
+ const sheets=workbookSheets(rows,latestResult.required_months);
+ const result=process.argv.includes('--smoke-test')?{filePath:path.join(app.getPath('temp'),'preaudit-workbook-smoke.xlsx')}:await dialog.showSaveDialog(window,{title:'Download all results by sheet',defaultPath:'PBB-PreAudit-by-sheet.xlsx',filters:[{name:'Excel workbook',extensions:['xlsx']}]});
+ if(result.canceled)return null;
+ await new Promise((resolve,reject)=>{
+  const executable=backend();const child=spawn(executable||'python',executable?[]:[path.join(__dirname,'..','roster.py')],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+  let output='',errors='',settled=false;
+  const timer=setTimeout(()=>{child.kill();finish(Error('Workbook export timed out.'));},120000);
+  function finish(error){if(settled)return;settled=true;clearTimeout(timer);error?reject(error):resolve();}
+  child.stdout.setEncoding('utf8');child.stderr.setEncoding('utf8');child.stdout.on('data',chunk=>output+=chunk);child.stderr.on('data',chunk=>errors+=chunk);child.on('error',finish);
+  child.on('close',code=>{try{const response=JSON.parse(output);if(code!==0||response.error)throw Error(response.error||errors||'Workbook export failed.');finish();}catch(error){finish(error);}});
+  child.stdin.on('error',()=>{});child.stdin.end(JSON.stringify({mode:'export_workbook',file:result.filePath,sheets}));
+ });return result.filePath;
+});
 ipcMain.handle('open-memo',async event=>{
  trusted(event);const memo=app.isPackaged?path.join(process.resourcesPath,'memo.pdf'):process.env.PREAUDIT_MEMO;
  if(memo){try{await fs.access(memo);const error=await shell.openPath(memo);if(error)throw Error(error);return;}catch(error){if(error.code!=='ENOENT')throw error;}}
@@ -84,6 +100,8 @@ app.whenReady().then(()=>{
     document.querySelector('[data-reason]').click();assert($('reason-dialog').open,'Clickable result did not open reason window');assert($('reason-months').children.length===7,'Reason window must show all seven months');$('reason-dialog').close();$('result-filter').value='';
     $('result-filter').value='Eligible';document.querySelector('[data-filter="review"]').click();assert($('result-filter').value===''&&filtered.length>0&&filtered.every(isReview),'Summary card must clear conflicting result filters');$('clear-filters').click();assert(filtered.length===data.results.length,'Clear filters must restore all entries');
     const prorated=data.results.find(row=>row.eligibility.grant_type==='Pro-rated');assert(prorated,'Expected a prorated entry');openReason(prorated.id);assert($('reason-dialog').open&&$('reason-calculation').textContent.includes('Proration factor')&&$('reason-calculation').textContent.includes(String(Math.round(prorated.eligibility.service_factor*100))+'%'),'Proration modal must show its calculation');$('reason-dialog').close();
+    $('personnel-filter').value='school';$('personnel-filter').dispatchEvent(new Event('change'));assert(filtered.length>0&&filtered.every(row=>row.scope==='school'),'School-based filter failed');
+    const chosenUnit=$('unit-filter').options[1]?.value;assert(chosenUnit,'Expected a school option');$('unit-filter').value=chosenUnit;$('unit-filter').dispatchEvent(new Event('change'));assert(filtered.length>0&&filtered.every(row=>row.unit===chosenUnit&&row.scope==='school'),'Individual school filter failed');assert($('export').textContent.includes(filtered.length.toLocaleString()),'Filtered CSV count must include personnel and school filters');resetFilters();
     $('group-filter').value='IU';$('group-filter').dispatchEvent(new Event('change'));assert(filtered.length===303,'IU filter must show 303 entries');
     $('file-filter').value=data.payfiles.find(f=>f.file.includes('Basilan NHS')).file;render();assert(filtered.length===251,'Basilan filter must show 251 entries');
     $('filter').value='review';render();assert(filtered.length>0,'Review list is empty');
@@ -101,6 +119,7 @@ app.whenReady().then(()=>{
     assert($('review-dialog').open&&reviewingId===expectedNext,'Confirmation must open the next unresolved employee');assert(!selectedPerson,'Next employee must require its own explicit selection');$('review-dialog').close();
     $('compare').click();await wait(()=>!$('compare').disabled);
     assert(reviewed().status==='Pre-audited','Saved identity review did not persist across rerun');
+    $('export-workbook').click();await wait(()=>!$('export-workbook').disabled);assert($('status').textContent.startsWith('Excel saved:'),'Workbook export failed: '+$('status').textContent);
     $('filter').value='Pre-audited';render();openReview(first.id);
     const savedTarget=reviewed().review.target;$('save-service').click();await wait(()=>!reviewBusy);assert(reviewed().review.target===savedTarget&&reviewed().status==='Pre-audited','Saving service must preserve identity and pre-audit status');
     await new Promise(resolve=>setTimeout(resolve,400));

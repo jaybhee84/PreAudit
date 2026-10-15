@@ -61,3 +61,7 @@ Pre-audited includes unique exact-name or TIN matches whose service checks pass 
 Version 1.0.0 uses the supplied Pre-Audit PBB artwork for the sidebar, window, Windows executable, and macOS application icon. Save service review stores classification, short-service reason, HR verification, and notes without changing a saved identity decision. HR verification cannot resolve conflicting TIN identities.
 
 Build the Windows installer after `npm run build` with `npm run installer:win`. The installer includes the entire app, creates shortcuts, and provides an uninstaller while retaining saved reviews.
+
+Pre-audited now denotes matched identity (automatic exact name/TIN or manually confirmed), independently of the Eligible/Pending/Not eligible service result. Filter CSV exports by IU/SDO, School-based/Office-based, and a specific school or office. Remarks are concise; the result window retains full reasons.
+
+Download Excel by sheet exports the complete comparison into IUs, SDO, and School-based tabs, regardless of on-screen filters. The School-based tab is a separate view that includes school-based staff from either submission group. Each tab has short remarks, frozen headers, and Excel column filters.

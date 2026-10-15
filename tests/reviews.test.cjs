@@ -37,8 +37,8 @@ test('exact automatic match passing all service checks is pre-audited without ma
  const result=applyReviews(automaticFixture(),{}),row=result.results[0];assert.equal(row.status,'Pre-audited');assert.equal(row.audit_method,'Automatic match');assert.equal(row.review,undefined);assert.equal(row.eligibility.result,'Eligible');
  applyReviews(result,{});assert.equal(row.status,'Pre-audited');
 });
-test('automatic match with missing monthly evidence remains pending',()=>{
- const result=automaticFixture();result.history.people.pop();applyReviews(result,{});assert.equal(result.results[0].status,'Matched');assert.equal(result.results[0].eligibility.result,'Pending');
+test('automatic match is pre-audited while missing service evidence remains Pending',()=>{
+ const result=automaticFixture();result.history.people.pop();applyReviews(result,{});assert.equal(result.results[0].status,'Pre-audited');assert.equal(result.results[0].eligibility.result,'Pending');
 });
 test('unconfirmed similar names are never automatically pre-audited',()=>{
  const result=automaticFixture();result.results[0].originalStatus='Possible name variant';applyReviews(result,{});assert.equal(result.results[0].status,'Possible name variant');assert.equal(result.results[0].eligibility.result,'Pending');

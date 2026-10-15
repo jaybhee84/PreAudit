@@ -14,9 +14,9 @@ function prepare(result){
  return result;
 }
 function markPreaudited(row){
- if(['Matched','TIN matched','Confirmed match'].includes(row.status)&&row.eligibility.result==='Eligible'){
+ if(['Matched','TIN matched','Confirmed match'].includes(row.status)){
   row.audit_method=row.status==='Confirmed match'?'Manually confirmed':'Automatic match';
-  row.status='Pre-audited';row.detail=row.audit_method+'; service pre-check passed. Remaining memorandum conditions still need validation.';
+  row.status='Pre-audited';row.detail=row.audit_method+'; identity pre-audited. See the separate PBB service result.';
  }
 }
 function applyReviews(result,decisions){
