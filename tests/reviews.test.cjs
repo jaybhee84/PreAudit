@@ -27,3 +27,19 @@ test('incomplete roster extraction does not classify a rejected suggestion as re
 test('retirement classification is cleared on undo',()=>{
  const result=fixture(),row=result.results[0];const change=decision(result,{rowId:row.id,action:'different',target:result.roster[0].id});applyReviews(result,{[row.id]:change.value});assert.equal(row.roster_retired,true);applyReviews(result,{});assert.equal(row.roster_retired,undefined);assert.equal(row.status,'Possible name variant');
 });
+
+function automaticFixture(){
+ const name='CRUZ, ANA MARIA';const person={name,file:'current.pdf',page:1,item:'ITEM',position:'Teacher'};
+ const months=require('../desktop/period.cjs').requiredMonths;
+ return prepare({pay_folder:'C:/pay',roster_folder:'C:/roster',roster_problems:[],roster:[person],history:{complete_months:months,people:months.map(month=>({...person,file:month+'.pdf',month}))},results:[{name,service_months:12,salary:30000,file:'Elementary.xlsx',sheet:'Form',cell:'F23',status:'Matched',detail:'Exact name',references:[person]}]});
+}
+test('exact automatic match passing all service checks is pre-audited without manual clicks',()=>{
+ const result=applyReviews(automaticFixture(),{}),row=result.results[0];assert.equal(row.status,'Pre-audited');assert.equal(row.audit_method,'Automatic match');assert.equal(row.review,undefined);assert.equal(row.eligibility.result,'Eligible');
+ applyReviews(result,{});assert.equal(row.status,'Pre-audited');
+});
+test('automatic match with missing monthly evidence remains pending',()=>{
+ const result=automaticFixture();result.history.people.pop();applyReviews(result,{});assert.equal(result.results[0].status,'Matched');assert.equal(result.results[0].eligibility.result,'Pending');
+});
+test('unconfirmed similar names are never automatically pre-audited',()=>{
+ const result=automaticFixture();result.results[0].originalStatus='Possible name variant';applyReviews(result,{});assert.equal(result.results[0].status,'Possible name variant');assert.equal(result.results[0].eligibility.result,'Pending');
+});

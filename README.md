@@ -55,3 +55,5 @@ Push a version tag (for example `git tag v1.0.0` then `git push origin v1.0.0`) 
 To build locally on the target operating system, install Node.js 22 and Python 3.12, run `npm ci`, `python -m pip install -r requirements-build.txt`, then `npm run build`. Run `python scripts/check-bundle.py` to verify the bundled native engine. Each architecture must be built with matching Node.js and Python architectures. Packaging does not copy any payroll, PSIPOP, TIN, or saved-decision files.
 
 The View eligibility memo button opens the official DBM guidelines when no memorandum is bundled. To include a local PDF in your own build, set PREAUDIT_MEMO to its absolute path before packaging; the PDF remains excluded from Git.
+
+Pre-audited includes unique exact-name or TIN matches whose service checks pass automatically, plus manually confirmed matches whose service checks pass. Each row identifies Automatic match or Manually confirmed. Matched counts identity matches still awaiting service checks. Ambiguous identities and incomplete service evidence remain pending.

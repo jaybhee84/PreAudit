@@ -13,13 +13,19 @@ function prepare(result){
  result.results=result.results.map(row=>({...row,id:hash([...scope,row.file,row.sheet,row.cell,row.name,row.tin||'']),originalStatus:row.status,originalReferences:row.references,originalDetail:row.detail,references:row.references.map(ref=>({...ref,id:sourceId(ref)}))}));
  return result;
 }
+function markPreaudited(row){
+ if(['Matched','TIN matched','Confirmed match'].includes(row.status)&&row.eligibility.result==='Eligible'){
+  row.audit_method=row.status==='Confirmed match'?'Manually confirmed':'Automatic match';
+  row.status='Pre-audited';row.detail=row.audit_method+'; service pre-check passed. Remaining memorandum conditions still need validation.';
+ }
+}
 function applyReviews(result,decisions){
  const roster=new Map(result.roster.map(ref=>[ref.id,ref]));
  const periodIndex=period.indices(result);
  for(const row of result.results){
   row.scope=decisions[row.id]?.scope||period.inferScope(row);
-  row.status=row.originalStatus;row.references=row.originalReferences.map(ref=>({...ref,id:sourceId(ref)}));row.detail=row.originalDetail;delete row.review;delete row.roster_retired;
-  const saved=decisions[row.id];if(!saved){row.eligibility=period.assess(result,row,periodIndex);continue;}
+  row.status=row.originalStatus;row.references=row.originalReferences.map(ref=>({...ref,id:sourceId(ref)}));row.detail=row.originalDetail;delete row.review;delete row.roster_retired;delete row.audit_method;
+  const saved=decisions[row.id];if(!saved){row.eligibility=period.assess(result,row,periodIndex);markPreaudited(row);continue;}
   const effectiveSaved={...saved,service_verified:saved.service_verified===true&&saved.service_snapshot===serviceSignature(row),service_verification_stale:saved.service_verified===true&&saved.service_snapshot!==serviceSignature(row)};
   const rejected=saved.rejected||[];row.references=row.references.filter(ref=>!rejected.includes(ref.id));row.review=effectiveSaved;
   if(saved.action==='match'&&!roster.has(saved.target)){delete row.review;row.status='Needs manual match';row.detail='The previously confirmed PSIPOP entry changed or is unavailable. Verify identity again.';}
@@ -38,7 +44,7 @@ function applyReviews(result,decisions){
    if(!['Matched','TIN matched','Multiple roster entries','Multiple TIN matches'].includes(row.originalStatus)&&saved.rosterSignature===hash(result.roster.filter(ref=>!ref.source).map(ref=>ref.id).sort())){row.status='Confirmed separated';row.references=[];row.review=effectiveSaved;row.detail='Reviewed and confirmed absent / separated from the current PSIPOP.';}
   }
   row.eligibility=period.assess(result,row,periodIndex);
-  if(row.status==='Confirmed match'&&row.eligibility.result==='Eligible'){row.status='Pre-audited';row.detail='Identity confirmed and the service-based pre-check is complete; remaining memorandum conditions still need validation.';}
+  markPreaudited(row);
  }
  return result;
 }
