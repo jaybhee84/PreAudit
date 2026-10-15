@@ -1,0 +1,22 @@
+{
+  "name": "preaudit",
+  "version": "1.0.0",
+  "description": "PBB payfile and September 2026 PSIPOP name matching",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "node scripts/start.cjs",
+    "start": "node scripts/start.cjs",
+    "test": "python -m unittest discover -s tests && node --test tests/reviews.test.cjs tests/period.test.cjs tests/benefit.test.cjs tests/csv.test.cjs",
+    "package": "node scripts/package.cjs",
+    "build:engine": "node scripts/build-engine.cjs",
+    "build": "npm run build:engine && npm run package"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.7.2"
+  }
+}
