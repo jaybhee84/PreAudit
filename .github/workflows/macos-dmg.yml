@@ -1,0 +1,63 @@
+name: Add macOS DMGs to existing release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag
+        required: true
+        default: v1.0.0
+permissions:
+  contents: read
+concurrency:
+  group: macos-dmg-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS-Intel
+            os: macos-15-intel
+          - name: macOS-Apple-Silicon
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download existing macOS app
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: gh release download "$TAG" --pattern 'PBB-PreAudit-${{ matrix.name }}.zip' --dir download
+      - name: Build and verify DMG
+        run: |
+          ditto -x -k 'download/PBB-PreAudit-${{ matrix.name }}.zip' unpacked
+          test -x 'unpacked/PBB PreAudit.app/Contents/MacOS/PBB PreAudit'
+          test -x 'unpacked/PBB PreAudit.app/Contents/Resources/backend/roster-engine'
+          bash scripts/create-dmg.sh 'unpacked/PBB PreAudit.app' 'release/PBB-PreAudit-${{ matrix.name }}.dmg'
+      - name: Upload DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" 'release/PBB-PreAudit-${{ matrix.name }}.dmg' --clobber
+  finish:
+    needs: dmg
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep macOS downloads DMG only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release delete-asset "$TAG" PBB-PreAudit-macOS-Intel.zip --yes
+          gh release delete-asset "$TAG" PBB-PreAudit-macOS-Apple-Silicon.zip --yes
+          gh release edit "$TAG" --notes-file RELEASE_NOTES.md

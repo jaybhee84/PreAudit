@@ -52,16 +52,18 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: Compress-Archive -Path 'release/PBB PreAudit-win32-x64/*' -DestinationPath 'release/PBB-PreAudit-Windows-x64.zip'
-      - name: Archive macOS app
+      - name: Create macOS DMG
         if: runner.os == 'macOS'
         shell: bash
         run: |
           app=$(find release -maxdepth 2 -name '*.app' -print -quit)
-          ditto -c -k --sequesterRsrc --keepParent "$app" "release/PBB-PreAudit-${{ matrix.name }}.zip"
+          bash scripts/create-dmg.sh "$app" "release/PBB-PreAudit-${{ matrix.name }}.dmg"
       - uses: actions/upload-artifact@v4
         with:
           name: PBB-PreAudit-${{ matrix.name }}
-          path: release/*.zip
+          path: |
+            release/*.zip
+            release/*.dmg
           if-no-files-found: error
           retention-days: 14
   release:
@@ -81,4 +83,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" artifacts/*.zip --title "PBB PreAudit $TAG" --notes-file RELEASE_NOTES.md --generate-notes
+        run: gh release create "$TAG" artifacts/* --title "PBB PreAudit $TAG" --notes-file RELEASE_NOTES.md --generate-notes

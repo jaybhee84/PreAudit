@@ -48,9 +48,9 @@ The packaged executable accepts --smoke-test for a real-folder UI workflow check
 
 ## Windows and macOS builds
 
-GitHub Actions builds Windows x64, macOS Intel, and macOS Apple Silicon on native runners. Every main-branch push, pull request, or manual Actions run tests and packages all three. Download ZIP files from the run's Artifacts section. Extract the complete Windows ZIP before opening PBB PreAudit.exe. On macOS extract and move PBB PreAudit.app into Applications.
+GitHub Actions builds Windows x64, macOS Intel, and macOS Apple Silicon on native runners. Every main-branch push, pull request, or manual Actions run tests and packages all three. Download the Windows ZIP or macOS DMG from the run's Artifacts section. Extract the complete Windows ZIP before opening PBB PreAudit.exe. On macOS, open the DMG and drag PBB PreAudit.app to Applications.
 
-Push a version tag (for example `git tag v1.0.0` then `git push origin v1.0.0`) to publish all three ZIP files in GitHub Releases after successful builds. Builds are unsigned; macOS distribution is not Apple notarized and may require approval in System Settings > Privacy & Security.
+Push a version tag (for example `git tag v1.0.0` then `git push origin v1.0.0`) to publish the Windows ZIP and both macOS DMGs in GitHub Releases after successful builds. Builds are unsigned; macOS distribution is not Apple notarized and may require approval in System Settings > Privacy & Security.
 
 To build locally on the target operating system, install Node.js 22 and Python 3.12, run `npm ci`, `python -m pip install -r requirements-build.txt`, then `npm run build`. Run `python scripts/check-bundle.py` to verify the bundled native engine. Each architecture must be built with matching Node.js and Python architectures. Packaging does not copy any payroll, PSIPOP, TIN, or saved-decision files.
 
