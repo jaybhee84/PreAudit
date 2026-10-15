@@ -39,11 +39,13 @@ function replaceRow(row){const index=data.results.findIndex(r=>r.id===row.id);if
 async function saveReview(action,target){
  if(reviewBusy)return;const row=currentReview();if(!row)return;
  const nextIds=[...reviewQueue];
- reviewBusy=true;$('confirm-match').disabled=true;$('confirm-separated').disabled=true;$('undo-review').disabled=true;reviewMessage('Saving review…');
+ reviewBusy=true;$('save-service').disabled=true;$('confirm-match').disabled=true;$('confirm-separated').disabled=true;$('undo-review').disabled=true;reviewMessage('Saving review…');
  try{
   const updated=await window.preAudit.saveReview({rowId:row.id,action,target,note:$('review-note').value,scope:$('person-scope').value,service_verified:$('verify-service').checked,short_service_reason:$('short-reason').value});replaceRow(updated);
   if(action==='different'){
    selectedPerson=null;$('review-current').textContent=`Current status: ${updated.status}`;$('undo-review').hidden=false;renderCandidates();reviewMessage(updated.roster_retired?'No matching person remains. Classified as retired per your roster rule; verify HR service for PBB proration.':'Marked as different people. This entry is still open for review.');
+  }else if(action==='service'){
+   openReview(updated.id,true);reviewMessage('Service review saved. '+updated.eligibility.reason);
   }else if(action==='undo'){
    openReview(updated.id,true);reviewMessage('Saved decision removed. The automatic comparison is restored.');
   }else{
@@ -52,7 +54,7 @@ async function saveReview(action,target){
    if($('next-review').checked&&next){reviewQueue=reviewQueue.filter(id=>id!==next);openReview(next,true);reviewMessage('Previous decision saved. Review this next employee and choose the matching person.');}
    else{$('review-dialog').close();if($('next-review').checked)status('Saved. No more unresolved entries in this review list.');}
   }
- }catch(error){reviewMessage(error.message,true);}finally{reviewBusy=false;$('confirm-separated').disabled=false;$('undo-review').disabled=false;$('confirm-match').disabled=!selectedPerson;}
+ }catch(error){reviewMessage(error.message,true);}finally{reviewBusy=false;$('save-service').disabled=false;$('confirm-separated').disabled=false;$('undo-review').disabled=false;$('confirm-match').disabled=!selectedPerson;}
 }
 $('rows').addEventListener('click',event=>{const button=event.target.closest('[data-review]');if(button)openReview(button.dataset.review);});
 $('rows').addEventListener('dblclick',event=>{const row=event.target.closest('[data-row-id]');if(row)openReview(row.dataset.rowId);});
@@ -76,6 +78,7 @@ $('candidates').addEventListener('click',async event=>{
 $('candidate-scope').onchange=()=>{selectedPerson=null;renderCandidates();};$('roster-search').oninput=()=>{selectedPerson=null;renderCandidates();};
 $('close-review').onclick=()=>{if(!reviewBusy)$('review-dialog').close();};
 $('review-dialog').addEventListener('cancel',event=>{if(reviewBusy)event.preventDefault();});
+$('save-service').onclick=()=>saveReview('service');
 $('confirm-match').onclick=()=>selectedPerson&&saveReview('match',selectedPerson);
 $('confirm-separated').onclick=()=>saveReview('separated');$('undo-review').onclick=()=>saveReview('undo');
 $('open-pay').onclick=async()=>{try{await window.preAudit.openSource({kind:'payfile',id:reviewingId});}catch(error){reviewMessage(error.message,true);}};

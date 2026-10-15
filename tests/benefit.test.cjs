@@ -19,3 +19,8 @@ test('short service needs a valid reason and HR verification',()=>{
 test('no service value is unavailable rather than zero',()=>{const check=assessBenefit({...person,service_months:null},options);assert.equal(check.result,'Pending');assert.equal(check.service_factor,null);assert.equal(check.indicative_pbb,null);});
 test('snapshot absence alone does not reject a qualifying retiree',()=>{const check=assessBenefit({...person,review:{service_verified:true}},{...options,retirement:{date:'2024-12-31'},notFound:['2025-01','2025-02']});assert.equal(check.result,'Eligible');});
 test('an inconsistent payfile amount is flagged without changing the source',()=>{const row={...person,payfile_pbb:100};const check=assessBenefit(row,options);assert.equal(check.result,'Pending');assert.equal(check.amount_mismatch,true);assert.equal(row.payfile_pbb,100);});
+
+test('non-finite salary or invalid PBB amount cannot pass the pre-check',()=>{
+ for(const salary of [Infinity,NaN,-1])assert.equal(assessBenefit({...person,salary},options).result,'Pending');
+ for(const payfile_pbb of [Infinity,NaN,-1,'100'])assert.equal(assessBenefit({...person,payfile_pbb},options).result,'Pending');
+});

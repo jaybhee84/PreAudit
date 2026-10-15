@@ -9,3 +9,5 @@
 #short-reason{width:100%;font-size:11px}.service-check{white-space:normal;line-height:1.5} .service-check input{flex-shrink:0}
 
 .proration-button{display:block;background:none;border:0;padding:6px 0;color:#176f91;text-decoration:underline;font-size:11px;text-align:left;cursor:pointer}#reason-calculation{flex-shrink:0;background:#f3f8fa;border-radius:8px;padding:0 12px;font-size:12px}#reason-calculation:empty{display:none}#reason-calculation h3{font-size:14px}#reason-calculation dl{display:grid;grid-template-columns:180px 1fr;gap:6px 12px}#reason-calculation dd{margin:0}#reason-calculation .note{font-size:11px;color:#607784}#reason-dialog[open]{overflow:auto}#reason-dialog #reason-months{flex:0 0 auto;max-height:260px}
+
+.brand{flex-direction:column;align-items:flex-start}.brand-logo{width:150px;height:150px;object-fit:contain;align-self:center;background:white;border-radius:10px;padding:5px}.brand>div{font-size:16px}.brand small{font-size:9px}#save-service{margin:8px 0;width:100%}

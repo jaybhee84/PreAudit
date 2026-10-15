@@ -7,3 +7,10 @@ test('office and unspecified personnel are not given a school-based eligibility 
 test('confirmed identity joins historical names by TIN',()=>{const {result,row}=sample(period.requiredMonths);row.name='CRUZ, ANA M';row.originalStatus='Possible name variant';row.review={action:'match'};assert.equal(period.assess(result,row,period.indices(result)).result,'Eligible');});
 test('retirement by December 2024 requires service verification and is not automatic disqualification',()=>{const {result,row}=sample(period.requiredMonths);result.retirements=[{name:'ANA MARIA CRUZ',date:'2024-12-31',file:'separation.xlsx',sheet:'DIRECTORY',cell:'B13'}];const check=period.assess(result,row,period.indices(result));assert.equal(check.result,'Pending');assert.ok(check.reason.includes('Retirement is a valid'));row.review={action:'match',service_verified:true};const verified=period.assess(result,row,period.indices(result));assert.equal(verified.result,'Eligible');assert.equal(verified.service_factor,1);});
 test('a retirement record rejected as a different person is not attached again',()=>{const {result,row}=sample(period.requiredMonths);result.retirements=[{id:'rejected-order',name:'ANA MARIA CRUZ',date:'2024-07-31'}];row.review={action:'match',service_verified:true,rejected:['rejected-order']};assert.equal(period.assess(result,row,period.indices(result)).retirement,null);});
+
+test('a name-only current match cannot resolve two different historical TINs',()=>{
+ const {result,row}=sample(period.requiredMonths);delete row.references[0].tin;result.history.people.push({...result.history.people[0],tin:'987654321000'});assert.equal(period.assess(result,row,period.indices(result)).result,'Pending');
+});
+test('retirement HR verification cannot override a TIN identity conflict',()=>{
+ const {result,row}=sample(period.requiredMonths);row.originalStatus='TIN/name conflict';row.roster_retired=true;row.review={action:'different',service_verified:true};assert.equal(period.assess(result,row,period.indices(result)).result,'Pending');
+});

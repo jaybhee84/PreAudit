@@ -57,3 +57,5 @@ To build locally on the target operating system, install Node.js 22 and Python 3
 The View eligibility memo button opens the official DBM guidelines when no memorandum is bundled. To include a local PDF in your own build, set PREAUDIT_MEMO to its absolute path before packaging; the PDF remains excluded from Git.
 
 Pre-audited includes unique exact-name or TIN matches whose service checks pass automatically, plus manually confirmed matches whose service checks pass. Each row identifies Automatic match or Manually confirmed. Matched counts identity matches still awaiting service checks. Ambiguous identities and incomplete service evidence remain pending.
+
+Version 1.0.0 uses the supplied Pre-Audit PBB artwork for the sidebar, window, Windows executable, and macOS application icon. Save service review stores classification, short-service reason, HR verification, and notes without changing a saved identity decision. HR verification cannot resolve conflicting TIN identities.

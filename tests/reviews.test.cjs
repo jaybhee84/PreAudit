@@ -43,3 +43,17 @@ test('automatic match with missing monthly evidence remains pending',()=>{
 test('unconfirmed similar names are never automatically pre-audited',()=>{
  const result=automaticFixture();result.results[0].originalStatus='Possible name variant';applyReviews(result,{});assert.equal(result.results[0].status,'Possible name variant');assert.equal(result.results[0].eligibility.result,'Pending');
 });
+
+test('service review preserves a saved identity match and rejected suggestions',()=>{
+ const result=fixture(),row=result.results[0];const first=decision(result,{rowId:row.id,action:'match',target:result.roster[0].id});first.value.rejected=['other-person'];
+ const saved=decision(result,{rowId:row.id,action:'service',scope:'office',service_verified:true,note:'HR records checked'},first.value);
+ assert.equal(saved.value.action,'match');assert.equal(saved.value.target,first.value.target);assert.deepEqual(saved.value.rejected,['other-person']);applyReviews(result,{[row.id]:saved.value});assert.equal(row.status,'Pre-audited');
+});
+test('retired roster-rule employee can save HR verification without selecting a different person',()=>{
+ const result=fixture(),row=result.results[0];row.service_months=7;
+ const rejected=decision(result,{rowId:row.id,action:'different',target:result.roster[0].id});applyReviews(result,{[row.id]:rejected.value});assert.equal(row.eligibility.result,'Pending');
+ const saved=decision(result,{rowId:row.id,action:'service',scope:'school',service_verified:true,note:'HR retirement service checked',short_service_reason:'Retirement'},rejected.value);applyReviews(result,{[row.id]:saved.value});assert.equal(row.status,'Retired - per roster rule');assert.equal(row.eligibility.result,'Eligible');assert.equal(row.eligibility.service_factor,.8);
+});
+test('saving service verification requires a supporting HR note',()=>{
+ const result=fixture();assert.throws(()=>decision(result,{rowId:result.results[0].id,action:'service',scope:'school',service_verified:true,note:''}),/HR service record/);
+});

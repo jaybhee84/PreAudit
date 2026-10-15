@@ -66,7 +66,7 @@ ipcMain.handle('open-memo',async event=>{
  await shell.openExternal('https://www.dbm.gov.ph/wp-content/uploads/Issuances/2026/Resolution/RESOLUTION-NO.-2026-1-and-MEMORANDUM-CIRCULAR-NO.-2026-1-updated.pdf');
 });
 app.whenReady().then(()=>{
- window=new BrowserWindow({show:false,width:1390,height:940,minWidth:940,minHeight:680,title:'PBB PreAudit',backgroundColor:'#f3f6fa',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+ window=new BrowserWindow({show:false,width:1390,height:940,minWidth:940,minHeight:680,title:'PBB PreAudit',icon:path.join(__dirname,'assets',process.platform==='win32'?'app.ico':'logo.png'),backgroundColor:'#f3f6fa',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
  window.once('ready-to-show',()=>{window.show();window.focus();});
  window.setMenuBarVisibility(false);window.loadFile(path.join(__dirname,'index.html'));
  window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',event=>event.preventDefault());
@@ -77,7 +77,7 @@ app.whenReady().then(()=>{
     const assert=(ok,message)=>{if(!ok)throw Error(message);};
     const wait=async(test)=>{const start=Date.now();while(!test()&&Date.now()-start<180000)await new Promise(r=>setTimeout(r,100));assert(test(),'Timed out waiting for UI operation');};
     const defaults=await window.preAudit.defaults();document.getElementById('pay').value=defaults.pay_folder;document.getElementById('roster').value=defaults.roster_folder;document.getElementById('history').value=defaults.history_folder;document.getElementById('compare').click();
-    await wait(()=>!document.getElementById('compare').disabled);assert(data,'Comparison failed');
+    await wait(()=>!document.getElementById('compare').disabled);assert(data,'Comparison failed');assert(document.querySelector('.brand-logo').naturalWidth>0,'Logo image must load');
     assert(data.history.missing_months.length===0,'All seven December-June source months should be present');
     $('month-filter').value='2025-03';$('month-state').value='Not found';render();assert(filtered.length>0&&filtered.every(row=>row.eligibility.months.some(month=>month.month==='2025-03'&&month.status==='Not found')),'Month filtering failed');assert($('export').textContent.includes(filtered.length.toLocaleString()),'CSV download count must reflect filtered entries');$('month-filter').value='';$('month-state').value='';
     $('result-filter').value=data.results.some(row=>row.eligibility.result==='Not eligible')?'Not eligible':'Pending';render();assert(filtered.length>0,'Expected reviewable service results');
@@ -102,6 +102,7 @@ app.whenReady().then(()=>{
     $('compare').click();await wait(()=>!$('compare').disabled);
     assert(reviewed().status==='Pre-audited','Saved identity review did not persist across rerun');
     $('filter').value='Pre-audited';render();openReview(first.id);
+    const savedTarget=reviewed().review.target;$('save-service').click();await wait(()=>!reviewBusy);assert(reviewed().review.target===savedTarget&&reviewed().status==='Pre-audited','Saving service must preserve identity and pre-audit status');
     await new Promise(resolve=>setTimeout(resolve,400));
     return {title:document.title,entries:$('total').textContent,matched:$('matched').textContent,review:$('review').textContent,absent:$('absent').textContent,preaudited:$('preaudited').textContent,rosterTins:data.roster_tins,rows:document.querySelectorAll('#rows tr').length,historyMonths:data.history.available_months,missingMonths:data.history.missing_months,eligibilityCounts:data.results.reduce((counts,row)=>(counts[row.eligibility.result]=(counts[row.eligibility.result]||0)+1,counts),{}),checks:'IU filter, payfile filter, right-click, different people, undo, identity confirmation, saved review, 7-month rule, missing sources stay pending, clickable reasons'};
    })()`);

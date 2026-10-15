@@ -51,7 +51,7 @@ function applyReviews(result,decisions){
 function decision(result,payload,previous={}){
  const row=result.results.find(r=>r.id===payload.rowId);if(!row)throw Error('This payfile entry is no longer available. Compare the files again.');
  if(payload.action==='undo')return {key:row.id,value:null};
- if(!['match','separated','different'].includes(payload.action))throw Error('Choose a match, different people, or confirm separation.');
+ if(!['match','separated','different','service'].includes(payload.action))throw Error('Choose a match, different people, or confirm separation.');
  if(['match','different'].includes(payload.action)&&!result.roster.some(ref=>ref.id===payload.target))throw Error('Select a person from the current PSIPOP.');
  if(payload.action==='match'&&row.tin){const target=result.roster.find(ref=>ref.id===payload.target);if(target.tin&&target.tin.slice(0,9)!==row.tin.slice(0,9)&&!String(payload.note||'').trim())throw Error('The TINs differ. Verify the source and add a review note before overriding this conflict.');}
  if(payload.action==='separated'&&(result.roster_problems||[]).length)throw Error('Resolve PSIPOP extraction issues before confirming separation.');
@@ -61,9 +61,10 @@ function decision(result,payload,previous={}){
  if(payload.action==='match')rejected=rejected.filter(id=>id!==payload.target);
  const scope=payload.scope||previous.scope||row.scope||period.inferScope(row);
  if(payload.action==='match'&&!['school','office'].includes(scope))throw Error('Classify this employee as school-based or office-based first.');
+ if(!['school','office'].includes(scope)&&payload.action==='service')throw Error('Classify this employee as school-based or office-based first.');
  const verified=payload.service_verified===true;
  if(verified&&!String(payload.note||'').trim())throw Error('Add the HR service record checked in the review note before marking service verified.');
  const shortReason=payload.short_service_reason||'';if(shortReason&&!validReasons.includes(shortReason))throw Error('Choose a recognized short-service reason.');
- return {key:row.id,value:{action:payload.action,target:payload.action==='match'?payload.target:null,scope,rejected,service_verified:verified,service_snapshot:serviceSignature(row),short_service_reason:shortReason,note:String(payload.note||'').trim().slice(0,2000),savedAt:new Date().toISOString(),rosterSignature:hash(result.roster.filter(ref=>!ref.source).map(ref=>ref.id).sort())}};
+ return {key:row.id,value:{action:payload.action==='service'?(previous.action||'service'):payload.action,target:payload.action==='service'?(previous.target||null):payload.action==='match'?payload.target:null,scope,rejected,service_verified:verified,service_snapshot:serviceSignature(row),short_service_reason:shortReason,note:String(payload.note||'').trim().slice(0,2000),savedAt:new Date().toISOString(),rosterSignature:hash(result.roster.filter(ref=>!ref.source).map(ref=>ref.id).sort())}};
 }
 module.exports={prepare,applyReviews,decision,sourceId};
