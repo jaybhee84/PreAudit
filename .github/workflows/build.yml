@@ -48,10 +48,11 @@ jobs:
         run: npm run build
       - name: Verify bundled engine
         run: python scripts/check-bundle.py
-      - name: Archive Windows app
+      - name: Create Windows setup EXE
         if: runner.os == 'Windows'
-        shell: pwsh
-        run: Compress-Archive -Path 'release/PBB PreAudit-win32-x64/*' -DestinationPath 'release/PBB-PreAudit-Windows-x64.zip'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run installer:win
       - name: Create macOS DMG
         if: runner.os == 'macOS'
         shell: bash
@@ -62,7 +63,7 @@ jobs:
         with:
           name: PBB-PreAudit-${{ matrix.name }}
           path: |
-            release/*.zip
+            release/*.exe
             release/*.dmg
           if-no-files-found: error
           retention-days: 14
